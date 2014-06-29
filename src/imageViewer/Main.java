@@ -13,7 +13,7 @@ public class Main implements ActionListener, Runnable, MouseListener,
 
 	JScrollPane scrollPane;
 	JLabel label;
-	ImageIcon imageIcon;
+	ScaleIcon imageIcon;
 
 	Point dragStart;
 	double scale = 1;
@@ -165,7 +165,7 @@ public class Main implements ActionListener, Runnable, MouseListener,
 		if (files == null || files.length == 0)
 			return;
 		long startTime = System.currentTimeMillis();
-		imageIcon = new ImageIcon(files[index].getAbsolutePath());
+		imageIcon = new ScaleIcon(files[index].getAbsolutePath());
 		label.setIcon(imageIcon);
 		// System.out.println(file[index].getAbsolutePath());
 		long endTime = System.currentTimeMillis();
@@ -238,6 +238,9 @@ public class Main implements ActionListener, Runnable, MouseListener,
 		y = Math.min(y, 0);
 
 		label.setLocation(x, y);
+		// System.out.println(x + "  " + y);
+		label.repaint();
+
 		dragStart = dragEnd;
 	}
 
@@ -267,21 +270,33 @@ public class Main implements ActionListener, Runnable, MouseListener,
 			return;
 		}
 		double scaleRatio = scale;
-		scale -= event.getWheelRotation() * scaleIncrement;
 
-		scale = Math.max(scale, 0.5);
+		JViewport parent = (JViewport) label.getParent();
+
+		scale -= event.getWheelRotation() * scaleIncrement;
 		scale = Math.min(scale, 5.0);
+		scale = Math.max(
+				scale,
+				Math.min(
+						parent.getExtentSize().height * 1.0
+								/ imageIcon.getIconOriginalHeight(), 1.0));
+		scale = Math.max(
+				scale,
+				Math.min(
+						parent.getExtentSize().width * 1.0
+								/ imageIcon.getIconOriginalWidth(), 1.0));
+		// System.out.println(scale);
+
+		imageIcon.setScale(scale);
 
 		scaleRatio = scale / scaleRatio;
 
-		int width = imageIcon.getIconWidth();
-		int height = imageIcon.getIconHeight();
-		ImageIcon icon = new ImageIcon(imageIcon.getImage()
-				.getScaledInstance((int) (width * scale),
-						(int) (height * scale), Image.SCALE_FAST));
-		// System.out.println(scale + " " + width * scale + " " + height *
-		// scale);
-		label.setIcon(icon);
+		Rectangle viewRect = parent.getViewRect();
+		parent.setViewPosition(new Point(
+				(int) ((viewRect.x + viewRect.width / 2) * scaleRatio - viewRect.width / 2),
+				(int) ((viewRect.y + viewRect.height / 2) * scaleRatio - viewRect.height / 2)));
+
+		label.repaint();
 	}
 
 	public Main() {
