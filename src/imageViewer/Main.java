@@ -1,9 +1,13 @@
 package imageViewer;
 
 import java.io.*;
+import java.util.Collection;
+import java.util.Iterator;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+
+import com.drew.metadata.Tag;
 
 public class Main implements ActionListener, Runnable, MouseListener,
 		MouseMotionListener, MouseWheelListener {
@@ -20,7 +24,7 @@ public class Main implements ActionListener, Runnable, MouseListener,
 	static double scaleIncrement = 0.1;
 
 	JPanel panel;
-	JButton slideShow, next, prev, fullscreen;
+	JButton exif, prev, slideShow, next, fullscreen;
 
 	JFileChooser fileChooser;
 	File[] files;
@@ -110,16 +114,19 @@ public class Main implements ActionListener, Runnable, MouseListener,
 	void initPanel() {
 		panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
+		exif = new JButton("Exif");
 		prev = new JButton("<-");
 		slideShow = new JButton("Play");
 		next = new JButton("->");
 		fullscreen = new JButton("Full Screen");
 
+		panel.add(exif);
 		panel.add(prev);
 		panel.add(slideShow);
 		panel.add(next);
 		panel.add(fullscreen);
 
+		exif.addActionListener(this);
 		prev.addActionListener(this);
 		slideShow.addActionListener(this);
 		next.addActionListener(this);
@@ -172,12 +179,31 @@ public class Main implements ActionListener, Runnable, MouseListener,
 		System.out.println("Run time£º " + (endTime - startTime) + "ms");
 	}
 
+	void showExif() {
+		String fileName = files[index].getAbsolutePath();
+		Collection<Tag> tags = MetaDataReader.getTags(fileName);
+		String result = "";
+		if (tags == null) {
+			result = "No exif!";
+		} else {
+			Iterator<Tag> iter = tags.iterator();
+			while (iter.hasNext()) {
+				Tag tag = (Tag) iter.next();
+				result += tag + "\n";
+			}
+		}
+		JOptionPane.showMessageDialog(frame, result, "Exif - " + files[index],
+				JOptionPane.INFORMATION_MESSAGE);
+	}
+
 	public void actionPerformed(ActionEvent e) {
 		Object src = e.getSource();
 		if (files == null || files.length == 0) {
 			return;
 		}
-		if (src == slideShow) {
+		if (src == exif) {
+			showExif();
+		} else if (src == slideShow) {
 			if (slideShow.getText() == "Play") {
 				startSlideShow();
 				slideShow.setText("Stop");
